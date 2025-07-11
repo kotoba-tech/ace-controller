@@ -295,11 +295,10 @@ class KotobaASRService(STTService):
                     await self._handle_interruptions(UserStoppedSpeakingFrame())
                 finalized_transcript = self._state.finalize()
                 if len(finalized_transcript) > 0:  # Long silence and no transcription
-                    return
-                logger.debug(f"Final user transcript: [{finalized_transcript}]")
-                frame = TranscriptionFrame(finalized_transcript, "", time_now_iso8601(), None)
-                await self.push_frame(frame)
-                self.last_transcript_frame = None
+                    logger.debug(f"Final user transcript: [{finalized_transcript}]")
+                    frame = TranscriptionFrame(finalized_transcript, "", time_now_iso8601(), None)
+                    await self.push_frame(frame)
+                    self.last_transcript_frame = None
             elif self._interim_results:
                 # Handle interim results
                 if self._generate_interruptions and self._vad_state != VADState.SPEAKING:
