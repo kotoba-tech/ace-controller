@@ -15,6 +15,7 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
+from pipecat.services.kotoba.stt import KotobaASRService
 
 from nvidia_pipecat.pipeline.ace_pipeline_runner import ACEPipelineRunner, PipelineMetadata
 
@@ -60,17 +61,23 @@ async def create_pipeline_task(pipeline_metadata: PipelineMetadata):
         ),
     )
 
-    llm = NvidiaLLMService(
-        api_key=os.getenv("NVIDIA_API_KEY"),
-        model="meta/llama-3.1-8b-instruct",
-    )
+    # llm = NvidiaLLMService(
+    #     api_key=os.getenv("NVIDIA_API_KEY"),
+    #     model="meta/llama-3.1-8b-instruct",
+    # )
 
-    stt = RivaASRService(
-        server="localhost:50051",
-        api_key=os.getenv("NVIDIA_API_KEY"),
-        language="en-US",
-        sample_rate=16000,
-        model="parakeet-1.1b-en-US-asr-streaming-silero-vad-asr-bls-ensemble",
+    # stt = RivaASRService(
+    #     server="localhost:50051",
+    #     api_key=os.getenv("NVIDIA_API_KEY"),
+    #     language="en-US",
+    #     sample_rate=16000,
+    #     model="parakeet-1.1b-en-US-asr-streaming-silero-vad-asr-bls-ensemble",
+    # )
+    stt = KotobaASRService(
+        server="api.kotobatech.ai",
+        api_key=os.getenv("KOTOBA_API_KEY"),
+        language="ja",
+        silence_seconds=1.0,
     )
     # Uncomment the following if you want to use Riva TTS (make sure to comment out ElevenLabsTTS below)
     # tts = RivaTTSService(
@@ -82,17 +89,17 @@ async def create_pipeline_task(pipeline_metadata: PipelineMetadata):
     #     zero_shot_quality=20,
     # )
 
-    tts = ElevenLabsTTSServiceWithEndOfSpeech(
-        api_key=os.getenv("ELEVENLABS_API_KEY"),
-        voice_id=os.getenv("ELEVENLABS_VOICE_ID", "cgSgspJ2msm6clMCkdW9"),
-        sample_rate=16000,
-        model="eleven_flash_v2_5",
-        param=ElevenLabsTTSService.InputParams(
-            stability=0.3,
-            speed=0.97,
-            similarity_boost=0.85,
-        ),
-    )
+    # tts = ElevenLabsTTSServiceWithEndOfSpeech(
+    #     api_key=os.getenv("ELEVENLABS_API_KEY"),
+    #     voice_id=os.getenv("ELEVENLABS_VOICE_ID", "cgSgspJ2msm6clMCkdW9"),
+    #     sample_rate=16000,
+    #     model="eleven_flash_v2_5",
+    #     param=ElevenLabsTTSService.InputParams(
+    #         stability=0.3,
+    #         speed=0.97,
+    #         similarity_boost=0.85,
+    #     ),
+    # )
 
     # Used to synchronize the user and bot transcripts in the UI
     stt_transcript_synchronization = UserTranscriptSynchronization()
@@ -107,10 +114,10 @@ async def create_pipeline_task(pipeline_metadata: PipelineMetadata):
         },
     ]
 
-    context = OpenAILLMContext(messages)
+    # context = OpenAILLMContext(messages)
 
     # Comment out the below line when enabling Speculative Speech Processing
-    context_aggregator = llm.create_context_aggregator(context)
+    # context_aggregator = llm.create_context_aggregator(context)
 
     # Uncomment the below line to enable speculative speech processing
     # nvidia_context_aggregator = create_nvidia_context_aggregator(context, send_interims=True)
@@ -123,17 +130,17 @@ async def create_pipeline_task(pipeline_metadata: PipelineMetadata):
             stt,  # Speech-To-Text
             stt_transcript_synchronization,
             # Comment out the below line when enabling Speculative Speech Processing
-            context_aggregator.user(),
+            # context_aggregator.user(),
             # Uncomment the below line to enable speculative speech processing
             # nvidia_context_aggregator.user(),
-            llm,  # LLM
-            tts,  # Text-To-Speech
+            # llm,  # LLM
+            # tts,  # Text-To-Speech
             # Caches TTS responses for coordinated delivery in speculative
             # speech processing
             # nvidia_tts_response_cacher, # Uncomment to enable speculative speech processing
             tts_transcript_synchronization,
             transport.output(),  # Websocket output to client
-            context_aggregator.assistant(),
+            # context_aggregator.assistant(),
             # Uncomment the below line to enable speculative speech processing
             # nvidia_context_aggregator.assistant(),
         ]
